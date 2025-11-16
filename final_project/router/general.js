@@ -1,5 +1,6 @@
 const express = require('express');
 let books = require("./booksdb.js");
+const axios = require("axios");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
@@ -36,45 +37,87 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  return res.status(200).json(books);
+public_users.get('/', async (req, res) => {
+    let data = await getAllBooks();
+  return res.status(200).json(data);
 });
 
+async function getAllBooks(){
+    return  books;
+}
+
+
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
+public_users.get('/isbn/:isbn',async function (req, res) {
     let isbn = req.params.isbn;
+    let filteredBooks = await getByIsbn(isbn);
+    return res.status(200).json(filteredBooks);
+ });
+
+async function getByIsbn(isbn){
     let filteredBooks;
     for (const [key, value] of Object.entries(books)) {
         if(books[key].ISBN == isbn){
             filteredBooks = books[key];
         }
     }  
-    return res.status(200).json(filteredBooks);
- });
+    return filteredBooks;
+}
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-    let author = req.params.author;
-    let filteredBooks;
-    for (const [key, value] of Object.entries(books)) {
-        if(books[key].author == author){
-            filteredBooks = books[key];
+// public_users.get('/author/:author',function (req, res) {
+//     let author = req.params.author;
+//     let filteredBooks;
+//     for (const [key, value] of Object.entries(books)) {
+//         if(books[key].author == author){
+//             filteredBooks = books[key];
+//         }
+//     }  
+//     return res.status(200).json(filteredBooks);
+// });
+
+// Helper: Get book by author
+const getBookByAuthor = async (author) =>
+    new Promise((resolve) => {
+        let result = null;
+        for (const key in books) {
+            if (books[key].author == author) result = books[key];
         }
-    }  
-    return res.status(200).json(filteredBooks);
+        resolve(result);
+    });
+
+// GET by AUTHOR
+public_users.get('/author/:author', async (req, res) => {
+    const book = await getBookByAuthor(req.params.author);
+    return res.status(200).json(book);
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
-  //Write your code here title
-  let title = req.params.title;
-    let filteredBooks;
-    for (const [key, value] of Object.entries(books)) {
-        if(books[key].title == title){
-            filteredBooks = books[key];
+// public_users.get('/title/:title',function (req, res) {
+//   //Write your code here title
+//   let title = req.params.title;
+//     let filteredBooks;
+//     for (const [key, value] of Object.entries(books)) {
+//         if(books[key].title == title){
+//             filteredBooks = books[key];
+//         }
+//     }  
+//   return res.status(200).json(filteredBooks);
+// });
+
+const getBookByTitle = async (title) =>
+    new Promise((resolve) => {
+        let result = null;
+        for (const key in books) {
+            if (books[key].title == title) result = books[key];
         }
-    }  
-  return res.status(200).json(filteredBooks);
+        resolve(result);
+    });
+
+// GET by TITLE
+public_users.get('/title/:title', async (req, res) => {
+    const book = await getBookByTitle(req.params.title);
+    return res.status(200).json(book);
 });
 
 //  Get book review
